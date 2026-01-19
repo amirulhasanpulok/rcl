@@ -11,9 +11,12 @@ resources:
   - 04-api-gateway.yaml
   - 05-auth-service.yaml
   - 06-payment-db.yaml
+  - 06-product-db.yaml
+  - 07-inventory-db.yaml
   - 07-product-service.yaml
   - 08-order-service.yaml
   - 09-payment-service.yaml
+  - 10-inventory-service.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: rcl-platform

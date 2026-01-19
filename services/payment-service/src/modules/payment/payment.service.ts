@@ -8,11 +8,17 @@ import { Transaction, TransactionType, TransactionStatus } from '@/entities/tran
 import { Refund, RefundStatus } from '@/entities/refund.entity';
 import { WebhookEvent } from '@/entities/webhook-event.entity';
 import { CreatePaymentIntentDto, RefundDto } from './dto/payment.dto';
+import { SSLCommerceGateway } from '@/gateways/ssl-commerce.gateway';
+import { PayPalGateway } from '@/gateways/paypal.gateway';
 import { randomBytes } from 'crypto';
+
+export type PaymentGateway = 'stripe' | 'ssl_commerce' | 'paypal';
 
 @Injectable()
 export class PaymentService {
   private stripe: Stripe;
+  private sslCommerce: SSLCommerceGateway;
+  private paypal: PayPalGateway;
 
   constructor(
     @InjectRepository(PaymentIntent)
@@ -26,37 +32,52 @@ export class PaymentService {
     private readonly eventEmitter: EventEmitter2,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+    this.sslCommerce = new SSLCommerceGateway();
+    this.paypal = new PayPalGateway();
   }
 
   async createPaymentIntent(
     userId: string,
     dto: CreatePaymentIntentDto,
+    gateway: PaymentGateway = 'stripe',
   ): Promise<PaymentIntent> {
     const idempotencyKey = `${dto.orderId}-${Date.now()}`;
 
     try {
-      const stripeIntent = await this.stripe.paymentIntents.create(
-        {
-          amount: Math.round(dto.amount * 100), // Convert to cents
-          currency: dto.currency.toLowerCase(),
-          metadata: {
-            orderId: dto.orderId,
-            userId,
-            ...dto.metadata,
+      let stripeIntentId: string;
+
+      if (gateway === 'stripe') {
+        const stripeIntent = await this.stripe.paymentIntents.create(
+          {
+            amount: Math.round(dto.amount * 100), // Convert to cents
+            currency: dto.currency.toLowerCase(),
+            metadata: {
+              orderId: dto.orderId,
+              userId,
+              gateway: 'stripe',
+              ...dto.metadata,
+            },
           },
-        },
-        { idempotencyKey },
-      );
+          { idempotencyKey },
+        );
+        stripeIntentId = stripeIntent.id;
+      } else if (gateway === 'ssl_commerce') {
+        // For SSLCommerce, generate a temporary ID
+        stripeIntentId = `ssl-${Date.now()}-${randomBytes(8).toString('hex')}`;
+      } else if (gateway === 'paypal') {
+        // For PayPal, generate a temporary ID
+        stripeIntentId = `paypal-${Date.now()}-${randomBytes(8).toString('hex')}`;
+      }
 
       const paymentIntent = this.paymentIntentRepository.create({
         orderId: dto.orderId,
         userId,
-        stripeIntentId: stripeIntent.id,
+        stripeIntentId,
         amount: dto.amount,
         currency: dto.currency,
         status: PaymentIntentStatus.INITIATED,
-        stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
-        metadata: dto.metadata,
+        stripePublishableKey: gateway === 'stripe' ? process.env.STRIPE_PUBLISHABLE_KEY : undefined,
+        metadata: { ...dto.metadata, gateway },
       });
 
       await this.paymentIntentRepository.save(paymentIntent);
@@ -66,6 +87,7 @@ export class PaymentService {
         orderId: dto.orderId,
         userId,
         amount: dto.amount,
+        gateway,
         timestamp: new Date(),
       });
 

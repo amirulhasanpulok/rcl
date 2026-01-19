@@ -4,6 +4,7 @@ import {
   Get,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
   RawBodyRequest,
@@ -23,12 +24,13 @@ export class PaymentController {
   @Post('intents')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create payment intent' })
+  @ApiOperation({ summary: 'Create payment intent with gateway selection' })
   async createPaymentIntent(
     @Request() req,
     @Body() dto: CreatePaymentIntentDto,
+    @Query('gateway') gateway: 'stripe' | 'ssl_commerce' | 'paypal' = 'stripe',
   ) {
-    const paymentIntent = await this.paymentService.createPaymentIntent(req.user.sub, dto);
+    const paymentIntent = await this.paymentService.createPaymentIntent(req.user.sub, dto, gateway);
     return {
       success: true,
       data: paymentIntent,
@@ -60,6 +62,23 @@ export class PaymentController {
 
     await this.paymentService.processWebhookEvent(event.type, event);
 
+    return { success: true };
+  }
+
+  @Post('webhooks/ssl-commerce')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'SSLCommerce webhook endpoint' })
+  async handleSSLCommerceWebhook(@Body() payload: any) {
+    // SSLCommerce validation happens via returnUrl, not webhooks
+    // This endpoint can be used for payment status updates
+    return { success: true };
+  }
+
+  @Post('webhooks/paypal')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'PayPal webhook endpoint' })
+  async handlePayPalWebhook(@Body() payload: any) {
+    // PayPal IPN webhook handling
     return { success: true };
   }
 

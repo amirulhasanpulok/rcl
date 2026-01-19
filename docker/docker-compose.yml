@@ -232,6 +232,10 @@ services:
       STRIPE_SECRET_KEY: sk_test_placeholder
       STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
       STRIPE_WEBHOOK_SECRET: whsec_test_placeholder
+      SSL_COMMERCE_STORE_ID: your_ssl_commerce_store_id
+      SSL_COMMERCE_STORE_PASSWORD: your_ssl_commerce_store_password
+      PAYPAL_CLIENT_ID: your_paypal_client_id
+      PAYPAL_CLIENT_SECRET: your_paypal_client_secret
       PAYMENT_DB_HOST: payment-db
       PAYMENT_DB_PORT: 5432
       PAYMENT_DB_USER: postgres
@@ -251,11 +255,61 @@ services:
       - rcl-network
     restart: unless-stopped
 
+  # PostgreSQL for Inventory Service
+  inventory-db:
+    image: postgres:15-alpine
+    container_name: rcl-inventory-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inventory_service
+    ports:
+      - "5436:5432"
+    volumes:
+      - inventory-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rcl-network
+
+  # Inventory Service
+  inventory-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.inventory-service
+    container_name: rcl-inventory-service
+    environment:
+      PORT: 3005
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key
+      INVENTORY_DB_HOST: inventory-db
+      INVENTORY_DB_PORT: 5432
+      INVENTORY_DB_USER: postgres
+      INVENTORY_DB_PASSWORD: postgres
+      INVENTORY_DB_NAME: inventory_service
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3005:3005"
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
 volumes:
   auth-db-data:
   product-db-data:
   order-db-data:
   payment-db-data:
+  inventory-db-data:
   redis-data:
   rabbitmq-data:
 

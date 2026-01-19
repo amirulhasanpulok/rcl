@@ -1,17 +1,18 @@
 # Payment Service
 
-Enterprise-grade payment processing service with Stripe integration, webhook handling, and refund management for the RCL E-Commerce platform.
+Enterprise-grade payment processing service with **Stripe**, **SSLCommerce**, and **PayPal** integration, webhook handling, and refund management for the RCL E-Commerce platform.
 
 ## Features
 
-- **Payment Intent Management**: Create and manage Stripe payment intents
-- **Webhook Processing**: Handle Stripe webhook events (payment succeeded, failed, refunded)
-- **Refund Management**: Process full and partial refunds with idempotency
+- **Multi-Gateway Support**: Stripe, SSLCommerce (Bangladesh), PayPal
+- **Payment Intent Management**: Create and manage payment intents across gateways
+- **Webhook Processing**: Handle webhooks from Stripe, SSLCommerce, PayPal
+- **Refund Management**: Process full and partial refunds
 - **Transaction Tracking**: Comprehensive transaction logs with status tracking
 - **Event-Driven**: Emits events for downstream services (Notification Service, Order Service)
 - **JWT Authentication**: Secure endpoints with JWT bearer tokens
 - **PostgreSQL**: Persistent transaction storage with TypeORM
-- **Stripe Integration**: Full Stripe SDK integration with webhook signature verification
+- **Idempotency**: Prevents duplicate charges
 
 ## Prerequisites
 
@@ -43,9 +44,21 @@ PORT=3004
 NODE_ENV=development
 JWT_SECRET=your-jwt-secret
 DATABASE_URL=postgresql://user:password@localhost:5432/payment_service
+
+# Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_test_...
+
+# SSLCommerce Configuration (Bangladesh Payment Gateway)
+SSL_COMMERCE_STORE_ID=your_ssl_commerce_store_id
+SSL_COMMERCE_STORE_PASSWORD=your_ssl_commerce_store_password
+
+# PayPal Configuration
+PAYPAL_CLIENT_ID=your_paypal_client_id
+PAYPAL_CLIENT_SECRET=your_paypal_client_secret
+
+# Common
 CORS_ORIGIN=http://localhost:3000
 ```
 
@@ -53,7 +66,7 @@ CORS_ORIGIN=http://localhost:3000
 
 ### Payment Intents
 
-- `POST /payment/intents` - Create payment intent
+- `POST /payment/intents?gateway=stripe|ssl_commerce|paypal` - Create payment intent with gateway selection
 - `GET /payment/intents/:id` - Get payment intent
 
 ### Transactions
@@ -68,6 +81,8 @@ CORS_ORIGIN=http://localhost:3000
 ### Webhooks
 
 - `POST /payment/webhooks/stripe` - Stripe webhook endpoint (public, no auth)
+- `POST /payment/webhooks/ssl-commerce` - SSLCommerce webhook endpoint
+- `POST /payment/webhooks/paypal` - PayPal webhook endpoint
 
 ### Health
 

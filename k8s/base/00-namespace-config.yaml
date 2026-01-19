@@ -50,3 +50,5 @@ type: Opaque
 stringData:
   payment-db-user: payment_user
   payment-db-password: payment_password
+  inventory-db-user: inventory_user
+  inventory-db-password: inventory_password

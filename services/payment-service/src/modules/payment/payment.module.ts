@@ -7,6 +7,8 @@ import { PaymentIntent } from '@/entities/payment-intent.entity';
 import { Transaction } from '@/entities/transaction.entity';
 import { Refund } from '@/entities/refund.entity';
 import { WebhookEvent } from '@/entities/webhook-event.entity';
+import { SSLCommerceGateway } from '@/gateways/ssl-commerce.gateway';
+import { PayPalGateway } from '@/gateways/paypal.gateway';
 
 @Module({
   imports: [
@@ -14,7 +16,7 @@ import { WebhookEvent } from '@/entities/webhook-event.entity';
     EventEmitterModule.forRoot(),
   ],
   controllers: [PaymentController],
-  providers: [PaymentService],
-  exports: [PaymentService],
+  providers: [PaymentService, SSLCommerceGateway, PayPalGateway],
+  exports: [PaymentService, SSLCommerceGateway, PayPalGateway],
 })
 export class PaymentModule {}

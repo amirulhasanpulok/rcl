@@ -24,3 +24,5 @@ replicas:
     count: 2
   - name: payment-service
     count: 2
+  - name: inventory-service
+    count: 2
