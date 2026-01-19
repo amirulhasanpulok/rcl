@@ -18,6 +18,8 @@ resources:
   - 09-payment-service.yaml
   - 10-inventory-service.yaml
   - 11-notification-service.yaml
+  - 12-admin-nextjs.yaml
+  - 13-storefront-nextjs.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: rcl-platform

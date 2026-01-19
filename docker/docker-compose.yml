@@ -338,6 +338,40 @@ services:
       - rcl-network
     restart: unless-stopped
 
+  # Admin Dashboard
+  admin-nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin-nextjs
+    container_name: rcl-admin-nextjs
+    ports:
+      - "3007:3007"
+    environment:
+      NEXT_PUBLIC_API_GATEWAY_URL: http://api-gateway:3000
+      NODE_ENV: production
+    depends_on:
+      - api-gateway
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
+  # Web Storefront
+  storefront-nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile.storefront-nextjs
+    container_name: rcl-storefront-nextjs
+    ports:
+      - "3008:3008"
+    environment:
+      NEXT_PUBLIC_API_GATEWAY_URL: http://api-gateway:3000
+      NODE_ENV: production
+    depends_on:
+      - api-gateway
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
 volumes:
   auth-db-data:
   product-db-data:

@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: storefront-nextjs
+  namespace: rcl
+spec:
+  type: NodePort
+  selector:
+    app: storefront-nextjs
+  ports:
+    - port: 80
+      targetPort: 3008
+      nodePort: 30008
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storefront-nextjs
+  namespace: rcl
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: storefront-nextjs
+  template:
+    metadata:
+      labels:
+        app: storefront-nextjs
+    spec:
+      containers:
+        - name: storefront-nextjs
+          image: storefront-nextjs:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3008
+          env:
+            - name: NEXT_PUBLIC_API_GATEWAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: api_gateway_url
+            - name: NODE_ENV
+              value: "production"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3008
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3008
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - storefront-nextjs
+                topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: storefront-nextjs-hpa
+  namespace: rcl
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: storefront-nextjs
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

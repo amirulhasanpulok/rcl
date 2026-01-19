@@ -28,3 +28,7 @@ replicas:
     count: 2
   - name: notification-service
     count: 2
+  - name: admin-nextjs
+    count: 2
+  - name: storefront-nextjs
+    count: 2
