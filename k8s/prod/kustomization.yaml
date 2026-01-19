@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rcl-platform
+
+bases:
+  - ../base
+
+patchesStrategicMerge:
+  - api-gateway-patch.yaml
+  - auth-service-patch.yaml
+  - product-service-patch.yaml
+  - order-service-patch.yaml
+  - payment-service-patch.yaml
+
+configMapGenerator:
+  - name: rcl-config
+    behavior: merge
+    literals:
+      - NODE_ENV=production
+      - CORS_ORIGIN=https://admin.rcl.io,https://store.rcl.io
+
+replicas:
+  - name: api-gateway
+    count: 3
+  - name: auth-service
+    count: 3
+  - name: product-service
+    count: 3
+  - name: order-service
+    count: 3
+  - name: payment-service
+    count: 3

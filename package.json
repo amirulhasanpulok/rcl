@@ -1,0 +1,39 @@
+{
+  "name": "rcl-ecommerce-platform",
+  "version": "1.0.0",
+  "description": "Enterprise-grade microservice e-commerce platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "bootstrap": "yarn install && yarn build",
+    "build": "yarn workspaces run build",
+    "dev": "yarn workspaces run dev",
+    "test": "yarn workspaces run test",
+    "test:e2e": "yarn workspaces run test:e2e",
+    "lint": "yarn workspaces run lint",
+    "format": "yarn workspaces run format",
+    "docker:build": "docker-compose -f docker/docker-compose.yml build",
+    "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f docker/docker-compose.yml down",
+    "k8s:apply": "kubectl apply -k k8s/base",
+    "k8s:prod": "kubectl apply -k k8s/prod",
+    "k8s:staging": "kubectl apply -k k8s/staging"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.3.0",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": ">=4.0.0"
+  }
+}

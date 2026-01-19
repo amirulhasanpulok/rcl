@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rcl-platform
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rcl-config
+  namespace: rcl-platform
+data:
+  NODE_ENV: production
+  CORS_ORIGIN: "https://admin.rcl.local,https://store.rcl.local"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rcl-secrets
+  namespace: rcl-platform
+type: Opaque
+stringData:
+  JWT_SECRET: change-this-in-production-with-strong-secret
+  DB_PASSWORD: change-this-in-production
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jwt-secrets
+  namespace: rcl-platform
+type: Opaque
+stringData:
+  jwt-secret: change-this-in-production-with-strong-jwt-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: stripe-secrets
+  namespace: rcl-platform
+type: Opaque
+stringData:
+  stripe-secret-key: sk_live_change_me_in_production
+  stripe-publishable-key: pk_live_change_me_in_production
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secrets
+  namespace: rcl-platform
+type: Opaque
+stringData:
+  payment-db-user: payment_user
+  payment-db-password: payment_password

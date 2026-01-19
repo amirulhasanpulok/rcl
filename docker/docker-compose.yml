@@ -1,0 +1,264 @@
+version: '3.9'
+
+services:
+  # PostgreSQL for Auth Service
+  auth-db:
+    image: postgres:15-alpine
+    container_name: rcl-auth-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_service
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rcl-network
+
+  # MongoDB for Product Service
+  product-db:
+    image: mongo:7-alpine
+    container_name: rcl-product-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: product_service
+    ports:
+      - "27017:27017"
+    volumes:
+      - product-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rcl-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: rcl-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rcl-network
+
+  # RabbitMQ for event bus
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rcl-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rcl-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api-gateway
+    container_name: rcl-api-gateway
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key
+      CORS_ORIGIN: http://localhost:3001,http://localhost:3002
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - redis
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.auth-service
+    container_name: rcl-auth-service
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key
+      DB_HOST: auth-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: auth_service
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
+  # Product Service
+  product-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.product-service
+    container_name: rcl-product-service
+    environment:
+      PORT: 3002
+      NODE_ENV: development
+      MONGODB_URI: mongodb://admin:password@product-db:27017/product_service?authSource=admin
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3002:3002"
+    depends_on:
+      product-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
+  # PostgreSQL for Order Service
+  order-db:
+    image: postgres:15-alpine
+    container_name: rcl-order-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: order_service
+    ports:
+      - "5434:5432"
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rcl-network
+
+  # Order Service
+  order-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.order-service
+    container_name: rcl-order-service
+    environment:
+      PORT: 3003
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key
+      DB_HOST: order-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: order_service
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3003:3003"
+    depends_on:
+      order-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
+  # PostgreSQL for Payment Service
+  payment-db:
+    image: postgres:15-alpine
+    container_name: rcl-payment-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payment_service
+    ports:
+      - "5435:5432"
+    volumes:
+      - payment-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rcl-network
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.payment-service
+    container_name: rcl-payment-service
+    environment:
+      PORT: 3004
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_test_placeholder
+      PAYMENT_DB_HOST: payment-db
+      PAYMENT_DB_PORT: 5432
+      PAYMENT_DB_USER: postgres
+      PAYMENT_DB_PASSWORD: postgres
+      PAYMENT_DB_NAME: payment_service
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3004:3004"
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
+volumes:
+  auth-db-data:
+  product-db-data:
+  order-db-data:
+  payment-db-data:
+  redis-data:
+  rabbitmq-data:
+
+networks:
+  rcl-network:
+    driver: bridge
