@@ -52,3 +52,15 @@ stringData:
   payment-db-password: payment_password
   inventory-db-user: inventory_user
   inventory-db-password: inventory_password
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: notification-secrets
+  namespace: rcl-platform
+type: Opaque
+stringData:
+  mongodb-uri: "mongodb://admin:password@product-db:27017/notification_service?authSource=admin"
+  smtp-user: "change_me_in_production"
+  smtp-password: "change_me_in_production"
+  twilio-from-number: "+1234567890"

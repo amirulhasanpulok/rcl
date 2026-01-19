@@ -13,6 +13,7 @@ patchesStrategicMerge:
   - order-service-patch.yaml
   - payment-service-patch.yaml
   - inventory-service-patch.yaml
+  - notification-service-patch.yaml
 
 configMapGenerator:
   - name: rcl-config
@@ -33,4 +34,6 @@ replicas:
   - name: payment-service
     count: 3
   - name: inventory-service
+    count: 3
+  - name: notification-service
     count: 3

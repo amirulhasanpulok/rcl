@@ -304,6 +304,40 @@ services:
       - rcl-network
     restart: unless-stopped
 
+  # Notification Service
+  notification-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.notification-service
+    container_name: rcl-notification-service
+    environment:
+      PORT: 3006
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key
+      MONGODB_URI: mongodb://admin:password@product-db:27017/notification_service?authSource=admin
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_SECURE: false
+      SMTP_USER: your-email@gmail.com
+      SMTP_PASSWORD: your-app-password
+      SMTP_FROM: noreply@rcl.local
+      TWILIO_ACCOUNT_SID: your_twilio_account_sid
+      TWILIO_AUTH_TOKEN: your_twilio_auth_token
+      TWILIO_FROM_NUMBER: +1234567890
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3006:3006"
+    depends_on:
+      product-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
 volumes:
   auth-db-data:
   product-db-data:

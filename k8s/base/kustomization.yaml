@@ -17,6 +17,7 @@ resources:
   - 08-order-service.yaml
   - 09-payment-service.yaml
   - 10-inventory-service.yaml
+  - 11-notification-service.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: rcl-platform
