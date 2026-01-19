@@ -20,6 +20,8 @@ resources:
   - 11-notification-service.yaml
   - 12-admin-nextjs.yaml
   - 13-storefront-nextjs.yaml
+  - 14-marketing-service.yaml
+  - 15-logistics-service.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: rcl-platform

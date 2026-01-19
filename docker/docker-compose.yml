@@ -372,12 +372,96 @@ services:
       - rcl-network
     restart: unless-stopped
 
+  # Marketing Service (SEO/GTM/GA4/Meta/TikTok)
+  marketing-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.marketing-service
+    container_name: rcl-marketing-service
+    environment:
+      PORT: 3009
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key
+      MONGODB_URI: mongodb://admin:password@product-db:27017/marketing_service?authSource=admin
+      CORS_ORIGIN: http://localhost:3000
+      GTM_DEFAULT_CONTAINER_ID: GTM-XXXXXX
+      GA4_DEFAULT_MEASUREMENT_ID: G-XXXXXXXXXX
+      META_PIXEL_DEFAULT_ID: 1234567890
+      TIKTOK_PIXEL_ID: ABC123XYZ
+    ports:
+      - "3009:3009"
+    depends_on:
+      product-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
+  # PostgreSQL for Logistics Service
+  logistics-db:
+    image: postgres:15-alpine
+    container_name: rcl-logistics-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: logistics_service
+    ports:
+      - "5437:5432"
+    volumes:
+      - logistics-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rcl-network
+
+  # Logistics Service (Shipment Management, Multi-Courier)
+  logistics-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.logistics-service
+    container_name: rcl-logistics-service
+    environment:
+      PORT: 3010
+      NODE_ENV: development
+      JWT_SECRET: your-super-secret-jwt-key
+      POSTGRES_HOST: logistics-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: logistics_service
+      CORS_ORIGIN: http://localhost:3000
+      STEADFAST_API_KEY: your_steadfast_api_key
+      STEADFAST_API_URL: https://steadfast.com.bd/api/v1
+      PATHAO_API_KEY: your_pathao_api_key
+      PATHAO_API_SECRET: your_pathao_api_secret
+      PATHAO_API_URL: https://api.pathao.com/v1
+    ports:
+      - "3010:3010"
+    depends_on:
+      logistics-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rcl-network
+    restart: unless-stopped
+
 volumes:
   auth-db-data:
   product-db-data:
   order-db-data:
   payment-db-data:
   inventory-db-data:
+  logistics-db-data:
   redis-data:
   rabbitmq-data:
 

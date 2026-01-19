@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: marketing-service
+  namespace: rcl-platform
+  labels:
+    app: marketing-service
+spec:
+  selector:
+    app: marketing-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3009
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marketing-service
+  namespace: rcl-platform
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: marketing-service
+  template:
+    metadata:
+      labels:
+        app: marketing-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - marketing-service
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: marketing-service
+          image: rcl-marketing-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3009
+              name: http
+          env:
+            - name: PORT
+              value: "3009"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: rcl-config
+                  key: NODE_ENV
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: rcl-secrets
+                  key: JWT_SECRET
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: rcl-secrets
+                  key: MONGODB_URI
+            - name: CORS_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: rcl-config
+                  key: CORS_ORIGIN
+            - name: GTM_DEFAULT_CONTAINER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: marketing-config
+                  key: GTM_CONTAINER_ID
+            - name: GA4_DEFAULT_MEASUREMENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: marketing-config
+                  key: GA4_MEASUREMENT_ID
+            - name: META_PIXEL_DEFAULT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: marketing-config
+                  key: META_PIXEL_ID
+            - name: TIKTOK_PIXEL_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: marketing-config
+                  key: TIKTOK_PIXEL_ID
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3009
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3009
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: marketing-service-hpa
+  namespace: rcl-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: marketing-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

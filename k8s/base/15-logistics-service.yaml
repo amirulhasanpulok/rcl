@@ -1,0 +1,169 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: logistics-service
+  namespace: rcl-platform
+  labels:
+    app: logistics-service
+spec:
+  selector:
+    app: logistics-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3010
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logistics-service
+  namespace: rcl-platform
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: logistics-service
+  template:
+    metadata:
+      labels:
+        app: logistics-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - logistics-service
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: logistics-service
+          image: rcl-logistics-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3010
+              name: http
+          env:
+            - name: PORT
+              value: "3010"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: rcl-config
+                  key: NODE_ENV
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: rcl-secrets
+                  key: JWT_SECRET
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: logistics-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: logistics-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rcl-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rcl-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: logistics-config
+                  key: POSTGRES_DB
+            - name: CORS_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: rcl-config
+                  key: CORS_ORIGIN
+            - name: STEADFAST_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: logistics-secrets
+                  key: STEADFAST_API_KEY
+            - name: STEADFAST_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: logistics-config
+                  key: STEADFAST_API_URL
+            - name: PATHAO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: logistics-secrets
+                  key: PATHAO_API_KEY
+            - name: PATHAO_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: logistics-secrets
+                  key: PATHAO_API_SECRET
+            - name: PATHAO_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: logistics-config
+                  key: PATHAO_API_URL
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3010
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3010
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: logistics-service-hpa
+  namespace: rcl-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: logistics-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

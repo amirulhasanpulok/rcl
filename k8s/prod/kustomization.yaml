@@ -16,6 +16,8 @@ patchesStrategicMerge:
   - notification-service-patch.yaml
   - admin-nextjs-patch.yaml
   - storefront-nextjs-patch.yaml
+  - marketing-service-patch.yaml
+  - logistics-service-patch.yaml
 
 configMapGenerator:
   - name: rcl-config
@@ -43,3 +45,7 @@ replicas:
     count: 3
   - name: storefront-nextjs
     count: 4
+  - name: marketing-service
+    count: 3
+  - name: logistics-service
+    count: 3
