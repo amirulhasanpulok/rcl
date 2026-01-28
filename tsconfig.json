@@ -17,6 +17,7 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
     "baseUrl": ".",
     "paths": {
       "@rcl/common/*": ["packages/common/src/*"],

@@ -22,35 +22,35 @@ export class User {
   id: string = uuid();
 
   @Column({ type: 'varchar', length: 255 })
-  email: string;
+  email!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  username: string;
+  username!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  password: string;
+  password!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  firstName?: string;
+  firstName!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  lastName?: string;
+  lastName!: string;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.CUSTOMER })
   role: UserRole;
 
   @Column({ type: 'boolean', default: false })
-  isEmailVerified: boolean;
+  isEmailVerified!: boolean;
 
   @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  lastLoginAt?: Date;
+  lastLoginAt!: Date;
 }
