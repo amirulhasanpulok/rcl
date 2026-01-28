@@ -1,14 +1,18 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+
   env: {
-    NEXT_PUBLIC_API_GATEWAY_URL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_API_GATEWAY_URL:
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'https://api.rclplanet.com',
   },
-  experimental: {
-    typedRoutes: true,
-  },
+
+  // Disable for now (enable later when routes are typed)
+  // experimental: {
+  //   typedRoutes: true,
+  // },
+
   images: {
     remotePatterns: [
       {
@@ -19,4 +23,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
+

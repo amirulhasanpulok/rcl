@@ -1,14 +1,17 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+
   env: {
-    NEXT_PUBLIC_API_GATEWAY_URL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_API_GATEWAY_URL:
+      process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'https://api.rclplanet.com',
   },
-  experimental: {
-    typedRoutes: true,
-  },
+
+//  experimental: {
+//    typedRoutes: true,
+//  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
+
